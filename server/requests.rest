@@ -1,0 +1,27 @@
+# POST http://localhost:4000/create-blog
+# Content-Type: application/json
+# Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjY1ZjU0N2ZiNDg1NWViZTdjMzgwY2FhYyIsImlhdCI6MTcxMDU3MzU2M30.N33pL9PPWx_yZBowbWem6RN1dS6XqXWccuzamQoX4II
+
+# {
+#     "title": "hello world ",
+#     "desc": "blog desc",
+#     "bannerImage": "bannerImage is here",
+#     "content": {
+#         "blocks": [1,2]
+#     },
+#     "tags": ["tag1", "tag23"]
+# }
+
+
+# POST http://localhost:4000/signup
+# Content-Type: application/json
+
+
+# {
+#     "fullname": "Johnny Depp",
+#     "email" : "johnny@gmail.com",
+#     "password": "Pass@123"
+# }
+
+
+GET http://localhost:4000/latest-blogs
