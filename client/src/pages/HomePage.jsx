@@ -203,7 +203,7 @@ function HomePage() {
 
             <div>
               <h1 className="font-medium text-xl mb-8">
-                Trending <i className="fi fi-rr-arrow-trend-up" />
+                Trending <i className="fi fi-rr-arrow-trend-up mt-2 ml-1" />
               </h1>
 
               <TrendingBlogsWrapper />

@@ -8,6 +8,8 @@ import Editor from "./pages/Editor";
 import HomePage from "./pages/HomePage";
 import { v4 as uuidv4 } from "uuid";
 import SearchPage from "./pages/SearchPage";
+import PageNotFound from "./pages/PageNotFound";
+import ProfilePage from "./pages/ProfilePage";
 
 const router = createBrowserRouter([
   {
@@ -30,6 +32,14 @@ const router = createBrowserRouter([
       {
         path: "/search/:query",
         element: <SearchPage />,
+      },
+      {
+        path: "user/:id",
+        element: <ProfilePage />,
+      },
+      {
+        path: "*",
+        element: <PageNotFound />,
       },
     ],
   },

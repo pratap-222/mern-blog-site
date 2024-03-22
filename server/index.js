@@ -325,7 +325,7 @@ app.get("/trending-blogs", async (req, res) => {
 });
 
 app.post("/search-blogs", async (req, res) => {
-  const { tag, query, page } = req.body;
+  const { tag, query, author, page } = req.body;
   const maxLimit = 5;
   let findQuery;
 
@@ -333,6 +333,8 @@ app.post("/search-blogs", async (req, res) => {
     findQuery = { tags: tag, draft: false };
   } else if (query) {
     findQuery = { draft: false, title: new RegExp(query, "i") };
+  } else if (author) {
+    findQuery = { author, draft: false };
   }
 
   try {
@@ -362,13 +364,15 @@ app.post("/all-latest-blogs-count", async (req, res) => {
 });
 
 app.post("/search-blogs-count", async (req, res) => {
-  const { tag, query } = req.body;
+  const { tag, author, query } = req.body;
   let findQuery;
 
   if (tag) {
     findQuery = { tags: tag, draft: false };
   } else if (query) {
     findQuery = { draft: false, title: new RegExp(query, "i") };
+  } else if (author) {
+    findQuery = { author, draft: false };
   }
 
   try {
@@ -392,6 +396,20 @@ app.post("/search-users", async (req, res) => {
       .limit(50);
 
     return res.status(200).json({ users: userData });
+  } catch (error) {
+    return res.status(500).json({ error: error.message });
+  }
+});
+
+app.post("/get-profile", async (req, res) => {
+  const { username } = req.body;
+
+  try {
+    const userData = await User.findOne({
+      "personal_info.username": username,
+    }).select("-personal_info.password -google_auth -updatedAt -blogs");
+
+    return res.status(200).json({ user: userData });
   } catch (error) {
     return res.status(500).json({ error: error.message });
   }
