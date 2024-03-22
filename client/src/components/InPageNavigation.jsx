@@ -1,5 +1,8 @@
-import React, { Children, useEffect, useRef, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { v4 as uuidv4 } from "uuid";
+
+export let activeTabLineRef;
+export let activeTabRef;
 
 function InPageNavigation({
   routes,
@@ -8,15 +11,13 @@ function InPageNavigation({
   children,
 }) {
   const [inPageNavIndex, setInPageNavIndex] = useState(0);
-  const activeTabLineRef = useRef();
-  const activeTabRef = useRef();
+  activeTabLineRef = useRef();
+  activeTabRef = useRef();
 
   const handleChangePageState = (btn, index) => {
     const { offsetWidth, offsetLeft } = btn;
     activeTabLineRef.current.style.width = offsetWidth + "px";
     activeTabLineRef.current.style.left = offsetLeft + "px";
-    console.log(offsetLeft);
-
     setInPageNavIndex(index);
   };
 

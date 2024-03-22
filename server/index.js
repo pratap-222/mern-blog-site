@@ -68,9 +68,6 @@ const verifyToken = (req, res, next) => {
   const authHeaders = req.headers.authorization;
   const token = authHeaders?.split(" ")[1];
 
-  console.log(token);
-  // console.log(req.headers);
-
   if (!token) {
     return res.status(401).json({ error: "No access token" });
   }
@@ -286,7 +283,9 @@ app.post("/create-blog", verifyToken, async (req, res) => {
   }
 });
 
-app.get("/latest-blogs", async (req, res) => {
+app.post("/latest-blogs", async (req, res) => {
+  const { page } = req.body;
+  const maxLimit = 5;
   try {
     const blogsData = await Blog.find({ draft: false })
       .populate(
@@ -295,9 +294,104 @@ app.get("/latest-blogs", async (req, res) => {
       )
       .sort({ publishedAt: -1 })
       .select("blog_id title desc bannerImage activity tags publishedAt -_id")
-      .limit(5);
+      .skip((page - 1) * maxLimit)
+      .limit(maxLimit);
 
     return res.status(200).json({ blogs: blogsData });
+  } catch (error) {
+    return res.status(500).json({ error: error.message });
+  }
+});
+
+app.get("/trending-blogs", async (req, res) => {
+  try {
+    const trendingBlogsData = await Blog.find({ draft: false })
+      .populate(
+        "author",
+        "personal_info.fullname personal_info.username personal_info.profile_img -_id"
+      )
+      .sort({
+        "activity.total_reads": -1,
+        "activity.total_likes": -1,
+        publishedAt: -1,
+      })
+      .select("blog_id title publishedAt -_id")
+      .limit(5);
+
+    return res.status(200).json({ blogs: trendingBlogsData });
+  } catch (error) {
+    return res.status(500).json({ error: error.message });
+  }
+});
+
+app.post("/search-blogs", async (req, res) => {
+  const { tag, query, page } = req.body;
+  const maxLimit = 5;
+  let findQuery;
+
+  if (tag) {
+    findQuery = { tags: tag, draft: false };
+  } else if (query) {
+    findQuery = { draft: false, title: new RegExp(query, "i") };
+  }
+
+  try {
+    const blogsData = await Blog.find(findQuery)
+      .populate(
+        "author",
+        "personal_info.fullname personal_info.username personal_info.profile_img -_id"
+      )
+      .sort({ publishedAt: -1 })
+      .select("blog_id title desc bannerImage activity tags publishedAt -_id")
+      .skip((page - 1) * maxLimit)
+      .limit(maxLimit);
+
+    return res.status(200).json({ blogs: blogsData });
+  } catch (error) {
+    return res.status(500).json({ error: error.message });
+  }
+});
+
+app.post("/all-latest-blogs-count", async (req, res) => {
+  try {
+    const count = await Blog.countDocuments({ draft: false });
+    return res.status(200).json({ totalDocs: count });
+  } catch (error) {
+    return res.status(500).json({ error: error.message });
+  }
+});
+
+app.post("/search-blogs-count", async (req, res) => {
+  const { tag, query } = req.body;
+  let findQuery;
+
+  if (tag) {
+    findQuery = { tags: tag, draft: false };
+  } else if (query) {
+    findQuery = { draft: false, title: new RegExp(query, "i") };
+  }
+
+  try {
+    const count = await Blog.countDocuments(findQuery);
+    return res.status(200).json({ totalDocs: count });
+  } catch (error) {
+    return res.status(500).json({ error: error.message });
+  }
+});
+
+app.post("/search-users", async (req, res) => {
+  const { query } = req.body;
+
+  try {
+    const userData = await User.find({
+      "personal_info.username": new RegExp(query, "i"),
+    })
+      .select(
+        "personal_info.fullname personal_info.username personal_info.profile_img -_id"
+      )
+      .limit(50);
+
+    return res.status(200).json({ users: userData });
   } catch (error) {
     return res.status(500).json({ error: error.message });
   }
