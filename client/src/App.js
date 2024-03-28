@@ -10,6 +10,7 @@ import { v4 as uuidv4 } from "uuid";
 import SearchPage from "./pages/SearchPage";
 import PageNotFound from "./pages/PageNotFound";
 import ProfilePage from "./pages/ProfilePage";
+import BlogPage from "./pages/BlogPage";
 
 const router = createBrowserRouter([
   {
@@ -38,6 +39,10 @@ const router = createBrowserRouter([
         element: <ProfilePage />,
       },
       {
+        path: "blog/:blogId",
+        element: <BlogPage />,
+      },
+      {
         path: "*",
         element: <PageNotFound />,
       },
@@ -45,6 +50,10 @@ const router = createBrowserRouter([
   },
   {
     path: "/editor",
+    element: <Editor />,
+  },
+  {
+    path: "/editor/:blogId",
     element: <Editor />,
   },
 ]);

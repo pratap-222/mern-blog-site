@@ -7,7 +7,7 @@ import { v4 as uuidv4 } from "uuid";
 import Tag from "./Tag";
 import axios from "axios";
 import { UserContext } from "../App";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useParams } from "react-router-dom";
 
 function PublishForm() {
   const { blog, setBlog, setEditorState } = useContext(EditorContext);
@@ -16,6 +16,7 @@ function PublishForm() {
     userAuth: { token },
   } = useContext(UserContext);
   const navigate = useNavigate();
+  const { blogId } = useParams();
 
   const handleCloseEvent = () => {
     setEditorState("editor");
@@ -77,7 +78,7 @@ function PublishForm() {
     try {
       await axios.post(
         `${process.env.REACT_APP_BASE_URL}/create-blog`,
-        blogObject,
+        { ...blogObject, id: blogId },
         {
           headers: { Authorization: `Bearer ${token}` },
         }

@@ -80,8 +80,6 @@ function ProfilePage() {
           data_to_send: { author: user_id },
         });
 
-        console.log(user_id);
-
         formattedData.user_id = user_id;
         setBlogs(formattedData);
       })

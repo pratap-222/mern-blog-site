@@ -204,7 +204,7 @@ app.get("/get-upload-url", async (req, res) => {
 app.post("/create-blog", verifyToken, async (req, res) => {
   const authorId = req.user;
 
-  let { title, desc, bannerImage, content, tags, draft } = req.body;
+  let { title, desc, bannerImage, content, tags, draft, id } = req.body;
 
   // We have already done client side validation but doing it again on server side to make
   // app more secure.
@@ -242,44 +242,58 @@ app.post("/create-blog", verifyToken, async (req, res) => {
   tags = tags.map((tag) => tag.toLowerCase());
 
   const blog_id =
+    id ||
     title
       .replace(/[^a-zA-Z0-9]/g, " ")
       .replace(/\s+/g, "-")
       .trim() + nanoid();
 
-  let blog = new Blog({
-    title,
-    desc,
-    bannerImage,
-    content,
-    tags,
-    author: authorId,
-    blog_id,
-    draft: Boolean(draft),
-  });
-
-  try {
-    const data = await blog.save();
-
-    let incrementalVal = draft ? 0 : 1;
-
+  if (id) {
     try {
-      await User.findOneAndUpdate(
-        { _id: authorId },
-        {
-          $inc: { "account_info.total_posts": incrementalVal },
-          $push: { blogs: data._id },
-        }
+      const data = await Blog.findOneAndUpdate(
+        { blog_id },
+        { title, desc, bannerImage, content, tags, draft: Boolean(draft) }
       );
 
-      return res.status(200).json({ id: data.blog_id });
+      return res.status(200).json({ id: blog_id });
     } catch (error) {
-      return res
-        .status(500)
-        .json({ error: "Failed to update the total posts count" });
+      return res.status(500).json({ error: error.message });
     }
-  } catch (error) {
-    return res.status(500).json({ error: error.message });
+  } else {
+    let blog = new Blog({
+      title,
+      desc,
+      bannerImage,
+      content,
+      tags,
+      author: authorId,
+      blog_id,
+      draft: Boolean(draft),
+    });
+
+    try {
+      const data = await blog.save();
+
+      let incrementalVal = draft ? 0 : 1;
+
+      try {
+        await User.findOneAndUpdate(
+          { _id: authorId },
+          {
+            $inc: { "account_info.total_posts": incrementalVal },
+            $push: { blogs: data._id },
+          }
+        );
+
+        return res.status(200).json({ id: data.blog_id });
+      } catch (error) {
+        return res
+          .status(500)
+          .json({ error: "Failed to update the total posts count" });
+      }
+    } catch (error) {
+      return res.status(500).json({ error: error.message });
+    }
   }
 });
 
@@ -325,12 +339,12 @@ app.get("/trending-blogs", async (req, res) => {
 });
 
 app.post("/search-blogs", async (req, res) => {
-  const { tag, query, author, page } = req.body;
-  const maxLimit = 5;
+  const { tag, query, author, page, limit, eliminate_blog } = req.body;
+  const maxLimit = limit ? limit : 2;
   let findQuery;
 
   if (tag) {
-    findQuery = { tags: tag, draft: false };
+    findQuery = { tags: tag, draft: false, blog_id: { $ne: eliminate_blog } };
   } else if (query) {
     findQuery = { draft: false, title: new RegExp(query, "i") };
   } else if (author) {
@@ -410,6 +424,42 @@ app.post("/get-profile", async (req, res) => {
     }).select("-personal_info.password -google_auth -updatedAt -blogs");
 
     return res.status(200).json({ user: userData });
+  } catch (error) {
+    return res.status(500).json({ error: error.message });
+  }
+});
+
+app.post("/get-blog", async (req, res) => {
+  const { blogId, draft, mode } = req.body;
+  const incrementalVal = mode === "edit" ? 0 : 1;
+
+  try {
+    const blogData = await Blog.findOneAndUpdate(
+      { blog_id: blogId },
+      { $inc: { "activity.total_reads": incrementalVal } }
+    )
+      .populate(
+        "author",
+        "personal_info.fullname personal_info.username personal_info.profile_img"
+      )
+      .select(
+        "title desc content bannerImage activity publishedAt blog_id tags"
+      );
+
+    if (blogData.draft && !draft) {
+      return res.status(500).json({ error: "You can not access draft blog." });
+    }
+
+    try {
+      await User.findOneAndUpdate(
+        { "personal_info.username": blogData.author.personal_info.username },
+        { $inc: { "account_info.total_reads": incrementalVal } }
+      );
+    } catch (error) {
+      return res.status(500).json({ error: error.message });
+    }
+
+    return res.status(200).json({ blog: blogData });
   } catch (error) {
     return res.status(500).json({ error: error.message });
   }

@@ -1,5 +1,5 @@
 import React, { useContext, useEffect } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { Link, useNavigate, useParams } from "react-router-dom";
 import logo from "../images/logo.png";
 import defaultBanner from "../images/blog banner.png";
 import AnimationWrapper from "./AnimationWrapper";
@@ -19,6 +19,7 @@ function BlogEditor() {
     userAuth: { token },
   } = useContext(UserContext);
   const navigate = useNavigate();
+  const { blogId } = useParams();
 
   useEffect(() => {
     if (!textEditor.isReady) {
@@ -26,7 +27,7 @@ function BlogEditor() {
         new EditorJS({
           holder: "textEditor",
           tools: tools,
-          data: content,
+          data: Array.isArray(content) ? content[0] : content,
           placeholder: "Let's write an awesome story.",
         })
       );
@@ -111,7 +112,7 @@ function BlogEditor() {
         try {
           await axios.post(
             `${process.env.REACT_APP_BASE_URL}/create-blog`,
-            blogObject,
+            { ...blogObject, id: blogId },
             {
               headers: { Authorization: `Bearer ${token}` },
             }
