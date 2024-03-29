@@ -11,6 +11,7 @@ const serviceAccount = require("../server/blog-site-78ad5-firebase-adminsdk-dass
 const { getAuth } = require("firebase-admin/auth");
 const aws = require("aws-sdk");
 const Blog = require("./Schema/Blog");
+const Notification = require("./Schema/Notification");
 
 const app = express();
 app.use(express.json());
@@ -462,6 +463,60 @@ app.post("/get-blog", async (req, res) => {
     return res.status(200).json({ blog: blogData });
   } catch (error) {
     return res.status(500).json({ error: error.message });
+  }
+});
+
+app.post("/like-blog", verifyToken, async (req, res) => {
+  const userId = req.user;
+  const { _id, isLikedByUser } = req.body;
+  const incrementalVal = isLikedByUser ? -1 : 1;
+
+  try {
+    const blogData = await Blog.findOneAndUpdate(
+      { _id },
+      { $inc: { "activity.total_likes": incrementalVal } }
+    );
+
+    try {
+      if (!isLikedByUser) {
+        const notification = new Notification({
+          type: "like",
+          blog: _id,
+          notification_for: blogData.author,
+          user: userId,
+        });
+        await notification.save();
+
+        return res.status(200).json({ liked_by_user: true });
+      } else {
+        await Notification.findOneAndDelete({
+          type: "like",
+          user: userId,
+          blog: _id,
+        });
+        return res.status(200).json({ liked_by_user: false });
+      }
+    } catch (error) {
+      return res.status(500).json({ error: error });
+    }
+  } catch (error) {
+    return res.status(500).json({ error: error });
+  }
+});
+
+app.post("/isliked-by-user", verifyToken, async (req, res) => {
+  const userId = req.user;
+  const { _id } = req.body;
+
+  try {
+    const result = await Notification.exists({
+      type: "like",
+      user: userId,
+      blog: _id,
+    });
+    return res.status(200).json({ result });
+  } catch (error) {
+    return res.status(500).json({ error: error });
   }
 });
 
