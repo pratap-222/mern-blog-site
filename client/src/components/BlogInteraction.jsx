@@ -21,6 +21,7 @@ function BlogInteraction() {
     setBlog,
     isLikedByUser,
     setLikedByUser,
+    setCommentsWrapper,
   } = useContext(BlogContext);
 
   const {
@@ -34,15 +35,13 @@ function BlogInteraction() {
       setLikedByUser((preVal) => !preVal);
 
       try {
-        const data = await axios.post(
+        await axios.post(
           `${process.env.REACT_APP_BASE_URL}/like-blog`,
           { _id, isLikedByUser },
           {
             headers: { Authorization: `Bearer ${token}` },
           }
         );
-
-        console.log(data.data);
       } catch (error) {
         console.log(error.message);
       }
@@ -86,7 +85,10 @@ function BlogInteraction() {
           </button>
           <p className="text-xl text-dark-grey">{total_likes}</p>
 
-          <button className="w-10 h-10 rounded-full flex items-center justify-center bg-grey/80">
+          <button
+            className="w-10 h-10 rounded-full flex items-center justify-center bg-grey/80"
+            onClick={() => setCommentsWrapper((preVal) => !preVal)}
+          >
             <i className="fi fi-rr-comment-dots" />
           </button>
           <p className="text-xl text-dark-grey">{total_comments}</p>

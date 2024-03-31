@@ -8,6 +8,9 @@ import BlogInteraction from "../components/BlogInteraction";
 import BlogPostCard from "../components/BlogPostCard";
 import { v4 as uuidv4 } from "uuid";
 import BlogContent from "../components/BlogContent";
+import CommentsContainer, {
+  fetchComments,
+} from "../components/CommentsContainer";
 
 export const blogStructure = {
   title: "",
@@ -27,6 +30,8 @@ function BlogPage() {
   const [similarBlogs, setSimilarBlogs] = useState(null);
   const [loading, setLoading] = useState(true);
   const [isLikedByUser, setLikedByUser] = useState(false);
+  const [commentsWrapper, setCommentsWrapper] = useState(false);
+  const [totalParentCommentsLoaded, setTotalParentCommentsLoaded] = useState(0);
 
   const {
     title,
@@ -44,7 +49,13 @@ function BlogPage() {
     axios
       .post(`${process.env.REACT_APP_BASE_URL}/get-blog`, { blogId })
       .then(async ({ data: { blog } }) => {
+        blog.comments = await fetchComments({
+          blog_id: blog._id,
+          setParentCommentCountFunc: setTotalParentCommentsLoaded,
+        });
+
         setBlog(blog);
+
         try {
           const {
             data: { blogs },
@@ -74,6 +85,9 @@ function BlogPage() {
     setBlog(blogStructure);
     setSimilarBlogs(null);
     setLoading(true);
+    setLikedByUser(false);
+    setCommentsWrapper(false);
+    setTotalParentCommentsLoaded(0);
   };
 
   return (
@@ -82,8 +96,19 @@ function BlogPage() {
         <Loader />
       ) : (
         <BlogContext.Provider
-          value={{ blog, setBlog, isLikedByUser, setLikedByUser }}
+          value={{
+            blog,
+            setBlog,
+            isLikedByUser,
+            setLikedByUser,
+            commentsWrapper,
+            setCommentsWrapper,
+            totalParentCommentsLoaded,
+            setTotalParentCommentsLoaded,
+          }}
         >
+          <CommentsContainer />
+
           <div className="max-w-[900px] center py-10 max-lg:px-[5vw]">
             <img src={bannerImage} alt="blog_banner" className="aspect-video" />
 

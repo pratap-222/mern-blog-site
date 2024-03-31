@@ -12,6 +12,7 @@ const { getAuth } = require("firebase-admin/auth");
 const aws = require("aws-sdk");
 const Blog = require("./Schema/Blog");
 const Notification = require("./Schema/Notification");
+const Comment = require("./Schema/Comment");
 
 const app = express();
 app.use(express.json());
@@ -81,6 +82,49 @@ const verifyToken = (req, res, next) => {
     req.user = user.id;
     next();
   });
+};
+
+const deleteComments = async (_id) => {
+  try {
+    const comment = await Comment.findOneAndDelete({ _id });
+
+    if (comment.parent) {
+      try {
+        const data = Comment.findOneAndUpdate(
+          { _id: comment.parent },
+          { $pull: { children: _id } }
+        );
+        console.log("Comment deleted from parent");
+      } catch (error) {
+        console.log(error);
+      }
+    }
+
+    await Notification.findOneAndDelete({ comment: _id }).then((notification) =>
+      console.log("comment notification deleted")
+    );
+
+    await Notification.findOneAndDelete({ reply: _id }).then((notification) =>
+      console.log("reply notification deleted")
+    );
+
+    const blog = await Blog.findOneAndUpdate(
+      { _id: comment.blog_id },
+      {
+        $pull: { comments: _id },
+        $inc: {
+          "activity.total_comments": -1,
+          "activity.total_parent_comments": comment.parent ? 0 : 1,
+        },
+      }
+    );
+
+    if (comment.children.length) {
+      comment.children.map((replies) => deleteComments(replies));
+    }
+  } catch (error) {
+    return res.status(500).json({ error: error.message });
+  }
 };
 
 app.post("/signup", (req, res) => {
@@ -517,6 +561,142 @@ app.post("/isliked-by-user", verifyToken, async (req, res) => {
     return res.status(200).json({ result });
   } catch (error) {
     return res.status(500).json({ error: error });
+  }
+});
+
+app.post("/add-comment", verifyToken, async (req, res) => {
+  const userId = req.user;
+  const { _id, comment, blog_author, replying_to } = req.body;
+
+  if (!comment.length) {
+    return res
+      .status(403)
+      .json({ error: "Write something to leave a comment" });
+  }
+
+  const commentObj = {
+    blog_id: _id,
+    blog_author,
+    comment,
+    commented_by: userId,
+  };
+
+  if (replying_to) {
+    commentObj.parent = replying_to;
+    commentObj.isReply = true;
+  }
+
+  try {
+    const commentData = await new Comment(commentObj).save();
+
+    const { comment, _id: comment_id, commentedAt, children } = commentData;
+
+    await Blog.findOneAndUpdate(
+      { _id },
+      {
+        $push: { comments: comment_id },
+        $inc: {
+          "activity.total_comments": 1,
+          "activity.total_parent_comments": replying_to ? 0 : 1,
+        },
+      }
+    );
+
+    const notificationObj = new Notification({
+      type: replying_to ? "reply" : "comment",
+      blog: _id,
+      notification_for: blog_author,
+      user: userId,
+      comment: comment_id,
+    });
+
+    if (replying_to) {
+      notificationObj.replied_on_comment = replying_to;
+
+      await Comment.findOneAndUpdate(
+        { _id: replying_to },
+        { $push: { children: comment_id } }
+      )
+        .then((replyingToCommentDoc) => {
+          notificationObj.notification_for = replyingToCommentDoc.commented_by;
+        })
+        .catch((error) => console.log(error));
+    }
+
+    await notificationObj.save();
+
+    return res
+      .status(200)
+      .json({ comment, commentedAt, _id: comment_id, userId, children });
+  } catch (error) {
+    return res.status(500).json({ error: error.message });
+  }
+});
+
+app.post("/get-blog-comments", async (req, res) => {
+  const { blog_id, skip } = req.body;
+  const maxLimit = 5;
+
+  try {
+    const commentData = await Comment.find({ blog_id, isReply: false })
+      .populate(
+        "commented_by",
+        "personal_info.fullname personal_info.username personal_info.profile_img"
+      )
+      .skip(skip)
+      .limit(maxLimit)
+      .sort({ commentedAt: -1 });
+
+    return res.status(200).json(commentData);
+  } catch (error) {
+    return res.status(500).json({ error: error.message });
+  }
+});
+
+app.post("/get-replies", async (req, res) => {
+  const { _id, skip } = req.body;
+  const maxLimit = 5;
+
+  try {
+    const repliesData = await Comment.findOne({ _id })
+      .populate({
+        path: "children",
+        options: {
+          limit: maxLimit,
+          skip: skip,
+          sort: { commentedAt: -1 },
+        },
+        populate: {
+          path: "commented_by",
+          select:
+            "personal_info.username personal_info.fullname personal_info.profile_img",
+        },
+        select: "-blog_id -updatedAt",
+      })
+      .select("children");
+
+    return res.status(200).json({ replies: repliesData.children });
+  } catch (error) {
+    return res.status(500).json({ error: error.message });
+  }
+});
+
+app.post("/delete-comment", verifyToken, async (req, res) => {
+  const userId = req.user;
+  const { _id } = req.body;
+
+  try {
+    const comment = await Comment.findOne({ _id });
+
+    if (userId == comment.commented_by || userId == comment.blog_author) {
+      deleteComments(_id);
+
+      return res.status(200).json({ status: "DONE" });
+    } else {
+      return res.status(403).json({ error: "You can not delete this comment" });
+    }
+  } catch (error) {
+    return res.status(500).json({ error: error.message });
   }
 });
 
