@@ -49,8 +49,6 @@ const CommentCard = ({ index, leftVal, commentData }) => {
       startingPoint = undefined;
     }
 
-    console.log(startingPoint);
-
     return startingPoint;
   };
 

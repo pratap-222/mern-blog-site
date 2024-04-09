@@ -700,6 +700,63 @@ app.post("/delete-comment", verifyToken, async (req, res) => {
   }
 });
 
+app.post("/change-password", verifyToken, async (req, res) => {
+  const { currentPassword, newPassword } = req.body;
+  const userId = req.user;
+
+  try {
+    const user = await User.findOne({ _id: userId });
+
+    if (user.google_auth) {
+      return res.status(403).json({
+        error: "You can't change password because you logged in through google",
+      });
+    }
+
+    bcrypt.compare(
+      currentPassword,
+      user.personal_info.password,
+      (error, result) => {
+        if (error) {
+          console.log(error);
+          return res
+            .status(500)
+            .json(
+              "Some error occured while changing the password please try again later"
+            );
+        }
+
+        if (!result) {
+          return res
+            .status(403)
+            .json({ error: "current password is incorrect" });
+        }
+
+        bcrypt.hash(newPassword, 10, async (error, hashed_password) => {
+          if (error) {
+            return res.status(500).json({ error: error.message });
+          }
+
+          try {
+            await User.findOneAndUpdate(
+              { _id: userId },
+              { "personal_info.password": hashed_password }
+            );
+
+            return res
+              .status(200)
+              .json({ status: "password changed successfully" });
+          } catch (error) {
+            return res.status(500).json({ error: error.message });
+          }
+        });
+      }
+    );
+  } catch (error) {
+    return res.status(500).json({ error: error.message });
+  }
+});
+
 app.listen(4000, () => {
   console.log("Listening on port 4000...");
 });

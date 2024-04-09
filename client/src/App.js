@@ -11,6 +11,8 @@ import SearchPage from "./pages/SearchPage";
 import PageNotFound from "./pages/PageNotFound";
 import ProfilePage from "./pages/ProfilePage";
 import BlogPage from "./pages/BlogPage";
+import SideNav from "./components/SideNav";
+import ChangePassword from "./pages/ChangePassword";
 
 const router = createBrowserRouter([
   {
@@ -21,6 +23,20 @@ const router = createBrowserRouter([
       {
         path: "/",
         element: <HomePage />,
+      },
+      {
+        path: "/settings",
+        element: <SideNav />,
+        children: [
+          {
+            path: "edit-profile",
+            element: <h1>Edit profile page</h1>,
+          },
+          {
+            path: "change-password",
+            element: <ChangePassword />,
+          },
+        ],
       },
       {
         path: "/signin",
