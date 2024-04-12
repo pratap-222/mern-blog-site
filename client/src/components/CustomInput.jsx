@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 
 function CustomInput(props) {
-  const { id, type, name, placeholder, icon, value } = props;
+  const { id, type, name, placeholder, icon, value, disable = false } = props;
   const [passwordVisible, setPasswordVisible] = useState(false);
   return (
     <div className="relative w-[100%] mb-4">
@@ -12,9 +12,10 @@ function CustomInput(props) {
         name={name}
         defaultValue={value}
         className="input-box"
+        disabled={disable}
       />
 
-      <i className={`fi fi-rr-${icon} input-icon`} />
+      <i className={`fi ${icon} input-icon`} />
 
       {type === "password" ? (
         <i

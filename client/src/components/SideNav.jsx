@@ -111,7 +111,7 @@ const SideNav = () => {
               onClick={(e) => setPageState(e.target.innerText)}
               className="sidebar-link"
             >
-              <i className="fi fi-rr-file-lock" /> Change Password
+              <i className="fi fi-rr-lock" /> Change Password
             </NavLink>
           </div>
         </div>

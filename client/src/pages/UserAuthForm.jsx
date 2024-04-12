@@ -102,7 +102,7 @@ function UserAuthForm({ type }) {
               type="text"
               name="fullname"
               placeholder="Full name"
-              icon="user"
+              icon="fi-rr-user"
             />
           ) : undefined}
 
@@ -110,14 +110,14 @@ function UserAuthForm({ type }) {
             type="email"
             name="email"
             placeholder="Email address"
-            icon="envelope"
+            icon="fi-rr-envelope"
           />
 
           <CustomInput
             type="password"
             name="password"
             placeholder="Password"
-            icon="key"
+            icon="fi-rr-key"
           />
 
           <button className="btn-dark center mt-14" type="submit">

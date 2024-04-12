@@ -757,6 +757,81 @@ app.post("/change-password", verifyToken, async (req, res) => {
   }
 });
 
+app.post("/update-profile-img", verifyToken, async (req, res) => {
+  const { url } = req.body;
+
+  try {
+    await User.findOneAndUpdate(
+      { _id: req.user },
+      { "personal_info.profile_img": url }
+    );
+    return res.status(200).json({ profile_img: url });
+  } catch (error) {
+    return res.status(500).json({ error: error.message });
+  }
+});
+
+app.post("/update-profile", verifyToken, async (req, res) => {
+  const { username, bio, social_links } = req.body;
+  const BIOLIMIT = 150;
+
+  if (username.length < 3) {
+    return res
+      .status(403)
+      .json({ error: "Username should be at least 3 leeters long." });
+  }
+
+  if (bio.length > BIOLIMIT) {
+    return res
+      .status(403)
+      .json({ error: `Bio should not be more than ${BIOLIMIT}` });
+  }
+
+  const socialLinksArr = Object.keys(social_links);
+
+  try {
+    for (let i = 0; i < socialLinksArr.length; i++) {
+      const link = social_links[socialLinksArr[i]];
+
+      if (link.length) {
+        const hostname = new URL(link).hostname;
+
+        if (
+          !hostname.includes(`${socialLinksArr[i]}.com`) &&
+          socialLinksArr[i] !== "website"
+        ) {
+          return res.status(403).json({
+            error: `"${socialLinksArr[i]}" link is invalid. You must enter full link.`,
+          });
+        }
+      }
+    }
+  } catch (error) {
+    return res.status(500).json({
+      error: "You must provide full social links with http(s) included.",
+    });
+  }
+
+  const updateObj = {
+    "personal_info.username": username,
+    "personal_info.bio": bio,
+    social_links,
+  };
+
+  try {
+    await User.findOneAndUpdate({ _id: req.user }, updateObj, {
+      runValidators: true,
+    });
+    return res.status(200).json({ username });
+  } catch (error) {
+    if (error.code === 11000) {
+      return res.status(409).json({ error: "username is already taken" });
+    }
+
+    return res.status(500).json({ error: error.message });
+  }
+});
+
 app.listen(4000, () => {
   console.log("Listening on port 4000...");
 });

@@ -13,6 +13,7 @@ import ProfilePage from "./pages/ProfilePage";
 import BlogPage from "./pages/BlogPage";
 import SideNav from "./components/SideNav";
 import ChangePassword from "./pages/ChangePassword";
+import EditProfile from "./pages/EditProfile";
 
 const router = createBrowserRouter([
   {
@@ -30,7 +31,7 @@ const router = createBrowserRouter([
         children: [
           {
             path: "edit-profile",
-            element: <h1>Edit profile page</h1>,
+            element: <EditProfile />,
           },
           {
             path: "change-password",

@@ -66,15 +66,14 @@ const ChangePassword = () => {
             placeholder="Current Password"
             type="password"
             className="profile-edit-input"
-            icon="unlock"
-            oncha
+            icon="fi-rr-unlock"
           />
           <CustomInput
             name="newPassword"
             placeholder="New Password"
             type="password"
             className="profile-edit-input"
-            icon="unlock"
+            icon="fi-rr-unlock"
           />
 
           <button className="btn-dark px-10" type="submit">
